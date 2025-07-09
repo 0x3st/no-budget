@@ -39,31 +39,44 @@ export default {
                 );
             }
             
-            // Root path - API status
-            if (path === '/' || path === '') {
-                return new Response(
-                    JSON.stringify({
-                        success: true,
-                        data: {
-                            message: "No Budget API",
-                            version: "1.0.0",
-                            status: "active",
-                            endpoints: {
-                                health: "/health",
-                                bills: "/api/bills",
-                                statistics: "/api/stats",
-                                tags: "/api/tags"
-                            }
-                        },
-                        timestamp: new Date().toISOString()
-                    }),
-                    {
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        }
+            // Serve frontend for root path and non-API routes
+            if (path === '/' || path === '' || (!path.startsWith('/api') && !path.startsWith('/health'))) {
+                try {
+                    // Try to serve static assets first
+                    if (env.ASSETS && (path.endsWith('.css') || path.endsWith('.js') || path.endsWith('.ico') || path.includes('.'))) {
+                        return env.ASSETS.fetch(request);
                     }
-                );
+                    
+                    // For all other routes, serve the main HTML file (SPA routing)
+                    const indexRequest = new Request(new URL('/index.html', request.url), request);
+                    return env.ASSETS ? env.ASSETS.fetch(indexRequest) : new Response('Frontend not available', { status: 404 });
+                } catch (error) {
+                    console.log('[INFO] Static assets not available, serving API info');
+                    // Fallback to API info if static assets are not available
+                    return new Response(
+                        JSON.stringify({
+                            success: true,
+                            data: {
+                                message: "No Budget API",
+                                version: "1.0.0",
+                                status: "active",
+                                endpoints: {
+                                    health: "/health",
+                                    bills: "/api/bills",
+                                    statistics: "/api/stats",
+                                    tags: "/api/tags"
+                                }
+                            },
+                            timestamp: new Date().toISOString()
+                        }),
+                        {
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            }
+                        }
+                    );
+                }
             }
             
             // CORS preflight handling
@@ -242,22 +255,69 @@ async function handleStatsApi(request, env, method, path, url) {
  */
 async function handleTagsApi(request, env, method, path, url) {
     try {
+        const pathParts = path.split('/');
+        const tagId = pathParts[3]; // /api/tags/{id}
+        
         switch (method) {
             case 'GET':
                 return getAllTags(env);
             case 'POST':
                 const tagData = await request.json();
                 return createTag(env, tagData);
+            case 'PUT':
+                if (tagId) {
+                    const tagData = await request.json();
+                    return updateTag(env, tagId, tagData);
+                }
+                break;
+            case 'DELETE':
+                if (tagId) {
+                    return deleteTag(env, tagId);
+                }
+                break;
             default:
                 return new Response(
-                    JSON.stringify({ error: 'Method not allowed' }),
-                    { status: 405, headers: { 'Content-Type': 'application/json' } }
+                    JSON.stringify({ 
+                        success: false,
+                        error: 'Method not allowed' 
+                    }),
+                    { 
+                        status: 405, 
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        } 
+                    }
                 );
         }
+        
+        return new Response(
+            JSON.stringify({ 
+                success: false,
+                error: 'Invalid request' 
+            }),
+            { 
+                status: 400, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
     } catch (error) {
         return new Response(
-            JSON.stringify({ error: 'Tags API error', message: error.message }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
+            JSON.stringify({ 
+                success: false,
+                error: 'Tags API error', 
+                message: error.message 
+            }),
+            { 
+                status: 500, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
         );
     }
 }
@@ -271,46 +331,53 @@ function generateUUID() {
     });
 }
 
-function validateBillData(data) {
-    const errors = [];
-    
-    if (!data.description || typeof data.description !== 'string') {
-        errors.push('Description is required and must be a string');
-    }
-    
-    if (!data.type || !['receive', 'pay'].includes(data.type)) {
-        errors.push('Type must be either "receive" or "pay"');
-    }
-    
-    if (!data.amount || typeof data.amount !== 'number' || data.amount <= 0) {
-        errors.push('Amount is required and must be a positive number');
-    }
-    
-    if (data.time && isNaN(new Date(data.time))) {
-        errors.push('Time must be a valid ISO date string');
-    }
-    
-    return errors;
-}
-
 // Bills CRUD Operations
 async function createBill(env, billData) {
-    const errors = validateBillData(billData);
-    if (errors.length > 0) {
+    // Validate required fields
+    if (!billData.description || typeof billData.description !== 'string') {
         return new Response(
-            JSON.stringify({ error: 'Validation failed', details: errors }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+            JSON.stringify({ 
+                success: false, 
+                error: 'Description is required and must be a string' 
+            }),
+            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+        );
+    }
+    
+    if (!billData.type || !['income', 'expense', 'receive', 'pay'].includes(billData.type)) {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Type must be either "income", "expense", "receive", or "pay"' 
+            }),
+            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+        );
+    }
+    
+    if (!billData.amount || typeof billData.amount !== 'number') {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Amount is required and must be a number' 
+            }),
+            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
         );
     }
     
     const bills = await getAllBillsFromStorage(env);
+    
+    // Convert frontend format to backend format
+    const backendType = billData.type === 'income' ? 'receive' : billData.type === 'expense' ? 'pay' : billData.type;
+    
     const newBill = {
         uuid: generateUUID(),
+        id: generateUUID(), // Also add id for frontend compatibility
         description: billData.description,
-        type: billData.type, // 'receive' or 'pay'
-        amount: billData.amount,
-        time: billData.time || new Date().toISOString(),
-        tag: billData.tag || 'general',
+        type: backendType,
+        amount: Math.abs(billData.amount), // Store as positive number
+        time: billData.date ? `${billData.date}T12:00:00.000Z` : new Date().toISOString(),
+        date: billData.date || new Date().toISOString().split('T')[0],
+        tag: billData.tag || null,
         category: billData.category || billData.tag || 'general',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -319,9 +386,31 @@ async function createBill(env, billData) {
     bills.push(newBill);
     await env.KV.put('bills', JSON.stringify(bills));
     
+    // Transform back to frontend format
+    const frontendBill = {
+        id: newBill.uuid,
+        description: newBill.description,
+        amount: newBill.type === 'receive' ? newBill.amount : -newBill.amount,
+        type: newBill.type === 'receive' ? 'income' : 'expense',
+        tag: newBill.tag,
+        date: newBill.date,
+        created_at: newBill.created_at,
+        updated_at: newBill.updated_at
+    };
+    
     return new Response(
-        JSON.stringify(newBill),
-        { status: 201, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+            success: true,
+            data: frontendBill,
+            timestamp: new Date().toISOString()
+        }),
+        { 
+            status: 201, 
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Access-Control-Allow-Origin': '*' 
+            } 
+        }
     );
 }
 
@@ -351,15 +440,15 @@ async function getBills(env, searchParams) {
     }
     
     if (startDate) {
-        filteredBills = filteredBills.filter(bill => new Date(bill.time) >= new Date(startDate));
+        filteredBills = filteredBills.filter(bill => new Date(bill.time || bill.date) >= new Date(startDate));
     }
     
     if (endDate) {
-        filteredBills = filteredBills.filter(bill => new Date(bill.time) <= new Date(endDate));
+        filteredBills = filteredBills.filter(bill => new Date(bill.time || bill.date) <= new Date(endDate));
     }
     
     // Sort by time (newest first)
-    filteredBills.sort((a, b) => new Date(b.time) - new Date(a.time));
+    filteredBills.sort((a, b) => new Date(b.time || b.date) - new Date(a.time || a.date));
     
     // Apply pagination
     const total = filteredBills.length;
@@ -367,14 +456,35 @@ async function getBills(env, searchParams) {
         filteredBills = filteredBills.slice(offset, offset + limit);
     }
     
+    // Transform to frontend format
+    const transformedBills = filteredBills.map(bill => ({
+        id: bill.uuid || bill.id,
+        description: bill.description,
+        amount: bill.amount,
+        type: bill.type === 'receive' ? 'income' : bill.type === 'pay' ? 'expense' : bill.type,
+        tag: bill.tag,
+        date: (bill.time || bill.date || '').split('T')[0], // Extract date part
+        created_at: bill.created_at,
+        updated_at: bill.updated_at
+    }));
+    
     return new Response(
         JSON.stringify({
-            bills: filteredBills,
-            total: total,
-            offset: offset,
-            limit: limit
+            success: true,
+            data: transformedBills,
+            meta: {
+                total: total,
+                offset: offset,
+                limit: limit
+            },
+            timestamp: new Date().toISOString()
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
     );
 }
 
@@ -397,51 +507,136 @@ async function getBillById(env, billId) {
 
 async function updateBill(env, billId, billData) {
     const bills = await getAllBillsFromStorage(env);
-    const billIndex = bills.findIndex(b => b.uuid === billId);
+    const billIndex = bills.findIndex(b => b.uuid === billId || b.id === billId);
     
     if (billIndex === -1) {
         return new Response(
-            JSON.stringify({ error: 'Bill not found' }),
-            { status: 404, headers: { 'Content-Type': 'application/json' } }
+            JSON.stringify({ 
+                success: false, 
+                error: 'Bill not found' 
+            }),
+            { 
+                status: 404, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
         );
     }
     
-    const errors = validateBillData(billData);
-    if (errors.length > 0) {
+    // Validate required fields
+    if (!billData.description || typeof billData.description !== 'string') {
         return new Response(
-            JSON.stringify({ error: 'Validation failed', details: errors }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+            JSON.stringify({ 
+                success: false, 
+                error: 'Description is required and must be a string' 
+            }),
+            { 
+                status: 400, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
         );
     }
+    
+    if (!billData.type || !['income', 'expense', 'receive', 'pay'].includes(billData.type)) {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Type must be either "income", "expense", "receive", or "pay"' 
+            }),
+            { 
+                status: 400, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+    
+    if (!billData.amount || typeof billData.amount !== 'number') {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Amount is required and must be a number' 
+            }),
+            { 
+                status: 400, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+    
+    // Convert frontend format to backend format
+    const backendType = billData.type === 'income' ? 'receive' : billData.type === 'expense' ? 'pay' : billData.type;
     
     // Update bill
     bills[billIndex] = {
         ...bills[billIndex],
         description: billData.description,
-        type: billData.type,
-        amount: billData.amount,
-        time: billData.time || bills[billIndex].time,
-        tag: billData.tag || bills[billIndex].tag,
+        type: backendType,
+        amount: Math.abs(billData.amount),
+        time: billData.date ? `${billData.date}T12:00:00.000Z` : bills[billIndex].time,
+        date: billData.date || bills[billIndex].date,
+        tag: billData.tag || null,
         category: billData.category || billData.tag || bills[billIndex].category,
         updated_at: new Date().toISOString()
     };
     
     await env.KV.put('bills', JSON.stringify(bills));
     
+    // Transform back to frontend format
+    const updatedBill = bills[billIndex];
+    const frontendBill = {
+        id: updatedBill.uuid || updatedBill.id,
+        description: updatedBill.description,
+        amount: updatedBill.type === 'receive' ? updatedBill.amount : -updatedBill.amount,
+        type: updatedBill.type === 'receive' ? 'income' : 'expense',
+        tag: updatedBill.tag,
+        date: updatedBill.date,
+        created_at: updatedBill.created_at,
+        updated_at: updatedBill.updated_at
+    };
+    
     return new Response(
-        JSON.stringify(bills[billIndex]),
-        { headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+            success: true,
+            data: frontendBill,
+            timestamp: new Date().toISOString()
+        }),
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
     );
 }
 
 async function deleteBill(env, billId) {
     const bills = await getAllBillsFromStorage(env);
-    const billIndex = bills.findIndex(b => b.uuid === billId);
+    const billIndex = bills.findIndex(b => b.uuid === billId || b.id === billId);
     
     if (billIndex === -1) {
         return new Response(
-            JSON.stringify({ error: 'Bill not found' }),
-            { status: 404, headers: { 'Content-Type': 'application/json' } }
+            JSON.stringify({ 
+                success: false, 
+                error: 'Bill not found' 
+            }),
+            { 
+                status: 404, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
         );
     }
     
@@ -449,47 +644,78 @@ async function deleteBill(env, billId) {
     await env.KV.put('bills', JSON.stringify(bills));
     
     return new Response(
-        JSON.stringify({ message: 'Bill deleted successfully', bill: deletedBill }),
-        { headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+            success: true,
+            data: { message: 'Bill deleted successfully', bill: deletedBill },
+            timestamp: new Date().toISOString()
+        }),
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
     );
 }
 
 // Statistics Functions
 async function getAllStats(env, searchParams) {
     const bills = await getAllBillsFromStorage(env);
-    const startDate = searchParams.get('start_date');
-    const endDate = searchParams.get('end_date');
+    const month = searchParams.get('month'); // Format: YYYY-MM
     
     let filteredBills = bills;
-    if (startDate) {
-        filteredBills = filteredBills.filter(bill => new Date(bill.time) >= new Date(startDate));
-    }
-    if (endDate) {
-        filteredBills = filteredBills.filter(bill => new Date(bill.time) <= new Date(endDate));
+    
+    // Filter by month if provided
+    if (month) {
+        filteredBills = bills.filter(bill => {
+            const billDate = bill.time || bill.date;
+            return billDate && billDate.startsWith(month);
+        });
     }
     
-    const totalReceive = filteredBills
+    const totalIncome = filteredBills
         .filter(bill => bill.type === 'receive')
         .reduce((sum, bill) => sum + bill.amount, 0);
     
-    const totalPay = filteredBills
+    const totalExpense = filteredBills
         .filter(bill => bill.type === 'pay')
         .reduce((sum, bill) => sum + bill.amount, 0);
     
-    const balance = totalReceive - totalPay;
+    const netBalance = totalIncome - totalExpense;
+    
+    // Category statistics for expenses only
+    const categoryStats = {};
+    filteredBills
+        .filter(bill => bill.type === 'pay' && bill.tag)
+        .forEach(bill => {
+            if (!categoryStats[bill.tag]) {
+                categoryStats[bill.tag] = 0;
+            }
+            categoryStats[bill.tag] += bill.amount;
+        });
+    
+    const categoryStatsArray = Object.entries(categoryStats)
+        .map(([tag, amount]) => ({ tag, amount: -amount })) // Make expenses negative for display
+        .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
     
     return new Response(
         JSON.stringify({
-            total_bills: filteredBills.length,
-            total_receive: totalReceive,
-            total_pay: totalPay,
-            balance: balance,
-            period: {
-                start: startDate || 'all time',
-                end: endDate || 'all time'
-            }
+            success: true,
+            data: {
+                totalIncome,
+                totalExpense: -totalExpense, // Make negative for display
+                netBalance,
+                billsCount: filteredBills.length,
+                categoryStats: categoryStatsArray
+            },
+            timestamp: new Date().toISOString()
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
     );
 }
 
@@ -699,28 +925,65 @@ async function getTrendStats(env, searchParams) {
 
 // Tags/Categories Functions
 async function getAllTags(env) {
-    const bills = await getAllBillsFromStorage(env);
-    const tags = [...new Set(bills.map(bill => bill.tag))];
-    const categories = [...new Set(bills.map(bill => bill.category))];
+    const existingTags = await env.KV.get('custom_tags');
+    const customTags = existingTags ? JSON.parse(existingTags) : [];
     
     return new Response(
         JSON.stringify({
-            tags: tags,
-            categories: categories,
-            combined: [...new Set([...tags, ...categories])]
+            success: true,
+            data: customTags,
+            timestamp: new Date().toISOString()
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
     );
 }
 
 async function createTag(env, tagData) {
+    if (!tagData.name || typeof tagData.name !== 'string') {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Tag name is required and must be a string' 
+            }),
+            { 
+                status: 400, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+
     const existingTags = await env.KV.get('custom_tags');
     const tags = existingTags ? JSON.parse(existingTags) : [];
     
+    // Check if tag already exists
+    if (tags.find(tag => tag.name.toLowerCase() === tagData.name.toLowerCase())) {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Tag with this name already exists' 
+            }),
+            { 
+                status: 409, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+    
     const newTag = {
         id: generateUUID(),
-        name: tagData.name,
-        color: tagData.color || '#007bff',
+        name: tagData.name.trim(),
+        color: tagData.color || '#667eea',
         description: tagData.description || '',
         created_at: new Date().toISOString()
     };
@@ -729,8 +992,151 @@ async function createTag(env, tagData) {
     await env.KV.put('custom_tags', JSON.stringify(tags));
     
     return new Response(
-        JSON.stringify(newTag),
-        { status: 201, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+            success: true,
+            data: newTag,
+            timestamp: new Date().toISOString()
+        }),
+        { 
+            status: 201, 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
+    );
+}
+
+async function updateTag(env, tagId, tagData) {
+    if (!tagData.name || typeof tagData.name !== 'string') {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Tag name is required and must be a string' 
+            }),
+            { 
+                status: 400, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+
+    const existingTags = await env.KV.get('custom_tags');
+    const tags = existingTags ? JSON.parse(existingTags) : [];
+    
+    const tagIndex = tags.findIndex(tag => tag.id === tagId);
+    if (tagIndex === -1) {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Tag not found' 
+            }),
+            { 
+                status: 404, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+    
+    // Check if another tag with same name exists
+    const existingTag = tags.find((tag, index) => 
+        index !== tagIndex && tag.name.toLowerCase() === tagData.name.toLowerCase()
+    );
+    
+    if (existingTag) {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Tag with this name already exists' 
+            }),
+            { 
+                status: 409, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+    
+    // Update tag
+    tags[tagIndex] = {
+        ...tags[tagIndex],
+        name: tagData.name.trim(),
+        color: tagData.color || tags[tagIndex].color,
+        description: tagData.description || tags[tagIndex].description,
+        updated_at: new Date().toISOString()
+    };
+    
+    await env.KV.put('custom_tags', JSON.stringify(tags));
+    
+    return new Response(
+        JSON.stringify({
+            success: true,
+            data: tags[tagIndex],
+            timestamp: new Date().toISOString()
+        }),
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
+    );
+}
+
+async function deleteTag(env, tagId) {
+    const existingTags = await env.KV.get('custom_tags');
+    const tags = existingTags ? JSON.parse(existingTags) : [];
+    
+    const tagIndex = tags.findIndex(tag => tag.id === tagId);
+    if (tagIndex === -1) {
+        return new Response(
+            JSON.stringify({ 
+                success: false, 
+                error: 'Tag not found' 
+            }),
+            { 
+                status: 404, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                } 
+            }
+        );
+    }
+    
+    const deletedTag = tags.splice(tagIndex, 1)[0];
+    await env.KV.put('custom_tags', JSON.stringify(tags));
+    
+    // Also remove the tag from any bills that use it
+    const bills = await getAllBillsFromStorage(env);
+    const updatedBills = bills.map(bill => {
+        if (bill.tag === deletedTag.name) {
+            return { ...bill, tag: null };
+        }
+        return bill;
+    });
+    await env.KV.put('bills', JSON.stringify(updatedBills));
+    
+    return new Response(
+        JSON.stringify({
+            success: true,
+            data: { message: 'Tag deleted successfully', tag: deletedTag },
+            timestamp: new Date().toISOString()
+        }),
+        { 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            } 
+        }
     );
 }
 

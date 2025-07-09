@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Budget - 个人财务管理</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 头部导航 -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">
+                        <i class="fas fa-wallet"></i>
+                        <span>No Budget</span>
+                    </div>
+                    <nav class="nav">
+                        <button class="nav-btn active" data-tab="dashboard">
+                            <i class="fas fa-chart-line"></i>
+                            仪表板
+                        </button>
+                        <button class="nav-btn" data-tab="bills">
+                            <i class="fas fa-receipt"></i>
+                            账单管理
+                        </button>
+                        <button class="nav-btn" data-tab="tags">
+                            <i class="fas fa-tags"></i>
+                            标签管理
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="main">
+            <div class="container">
+                <!-- 仪表板 -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="dashboard-header">
+                        <h1>财务概览</h1>
+                        <div class="date-selector">
+                            <select id="monthSelector">
+                                <option value="">所有时间</option>
+                                <option value="2025-01">2025年1月</option>
+                                <option value="2025-02">2025年2月</option>
+                                <option value="2025-03">2025年3月</option>
+                                <option value="2025-04">2025年4月</option>
+                                <option value="2025-05">2025年5月</option>
+                                <option value="2025-06">2025年6月</option>
+                                <option value="2025-07">2025年7月</option>
+                                <option value="2025-08">2025年8月</option>
+                                <option value="2025-09">2025年9月</option>
+                                <option value="2025-10">2025年10月</option>
+                                <option value="2025-11">2025年11月</option>
+                                <option value="2025-12">2025年12月</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon income">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalIncome">¥0</div>
+                                <div class="stat-label">总收入</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon expense">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalExpense">¥0</div>
+                                <div class="stat-label">总支出</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon balance">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="netBalance">¥0</div>
+                                <div class="stat-label">净余额</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon count">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="billsCount">0</div>
+                                <div class="stat-label">账单数量</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts">
+                        <div class="chart-container">
+                            <h3>分类支出统计</h3>
+                            <div id="categoryChart" class="chart-placeholder">
+                                <div class="loading">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账单管理 -->
+                <div id="bills" class="tab-content">
+                    <div class="bills-header">
+                        <h1>账单管理</h1>
+                        <button class="btn btn-primary" id="addBillBtn">
+                            <i class="fas fa-plus"></i>
+                            添加账单
+                        </button>
+                    </div>
+
+                    <div class="bills-filters">
+                        <div class="filter-group">
+                            <select id="typeFilter">
+                                <option value="">所有类型</option>
+                                <option value="income">收入</option>
+                                <option value="expense">支出</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="tagFilter">
+                                <option value="">所有标签</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <input type="text" id="searchInput" placeholder="搜索账单..." class="search-input">
+                        </div>
+                    </div>
+
+                    <div class="bills-list" id="billsList">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+
+                <!-- 标签管理 -->
+                <div id="tags" class="tab-content">
+                    <div class="tags-header">
+                        <h1>标签管理</h1>
+                        <button class="btn btn-primary" id="addTagBtn">
+                            <i class="fas fa-plus"></i>
+                            添加标签
+                        </button>
+                    </div>
+
+                    <div class="tags-list" id="tagsList">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 添加账单模态框 -->
+        <div id="billModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="billModalTitle">添加账单</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <form id="billForm">
+                    <div class="form-group">
+                        <label for="billDescription">描述 *</label>
+                        <input type="text" id="billDescription" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billAmount">金额 *</label>
+                        <input type="number" id="billAmount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billType">类型 *</label>
+                        <select id="billType" required>
+                            <option value="">选择类型</option>
+                            <option value="income">收入</option>
+                            <option value="expense">支出</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="billTag">标签</label>
+                        <select id="billTag">
+                            <option value="">选择标签</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="billDate">日期 *</label>
+                        <input type="date" id="billDate" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelBillBtn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 添加标签模态框 -->
+        <div id="tagModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="tagModalTitle">添加标签</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <form id="tagForm">
+                    <div class="form-group">
+                        <label for="tagName">标签名称 *</label>
+                        <input type="text" id="tagName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tagColor">颜色</label>
+                        <input type="color" id="tagColor" value="#007bff">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelTagBtn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 消息提示 -->
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
