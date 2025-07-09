@@ -1,24 +1,51 @@
 {
 	"name": "no-budget",
 	"version": "1.0.0",
-	"description": "Lightweight personal finance API built on Cloudflare Workers",
+	"description": "Lightweight personal finance API built on Cloudflare Workers with comprehensive accounting features",
 	"main": "src/index.js",
-	"private": true,
+	"private": false,
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
-		"start": "wrangler dev"
+		"start": "wrangler dev",
+		"test": "echo \"Tests will be added in future versions\" && exit 0",
+		"lint": "echo \"Linting will be added in future versions\" && exit 0",
+		"docs:dev": "vuepress dev docs",
+		"docs:build": "vuepress build docs",
+		"docs:deploy": "npm run docs:build && gh-pages -d docs/.vuepress/dist"
 	},
 	"keywords": [
 		"cloudflare-workers",
 		"finance",
 		"api",
 		"budget",
-		"javascript"
+		"javascript",
+		"accounting",
+		"personal-finance",
+		"expense-tracker",
+		"serverless",
+		"rest-api",
+		"statistics",
+		"analytics"
 	],
-	"author": "Your Name",
+	"author": "No Budget API Contributors",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/0x3st/no-budget.git"
+	},
+	"bugs": {
+		"url": "https://github.com/0x3st/no-budget/issues"
+	},
+	"homepage": "https://github.com/0x3st/no-budget#readme",
+	"engines": {
+		"node": ">=18.0.0"
+	},
 	"devDependencies": {
-		"wrangler": "^4.24.0"
+		"wrangler": "^4.24.0",
+		"vuepress": "^2.0.0",
+		"@vuepress/theme-default": "^2.0.0",
+		"@vuepress/plugin-search": "^2.0.0",
+		"gh-pages": "^6.0.0"
 	}
 }

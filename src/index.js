@@ -1,6 +1,10 @@
 /**
  * No Budget API - Complete Accounting System
- * Cloudflare Workers main entry point
+ * A lightweight personal finance API built on Cloudflare Workers
+ * 
+ * @version 1.0.0
+ * @author No Budget API Contributors
+ * @license MIT
  */
 
 export default {
@@ -11,39 +15,68 @@ export default {
             const path = url.pathname;
             const method = request.method;
             
-            console.log(`[DEBUG] Request URL: ${request.url}`);
-            console.log(`[DEBUG] Request method: ${method}`);
-            console.log(`[DEBUG] Extracted path: ${path}`);
+            console.log(`[INFO] ${method} ${path}`);
             
             // Health check endpoint
             if (path === '/health') {
-                console.log('[DEBUG] Health check endpoint hit');
                 return new Response(
                     JSON.stringify({
-                        status: 'healthy',
-                        service: 'no-budget-api',
-                        debug: true,
+                        success: true,
+                        data: {
+                            status: 'healthy',
+                            service: 'no-budget-api',
+                            version: '1.0.0',
+                            timestamp: new Date().toISOString()
+                        },
                         timestamp: new Date().toISOString()
                     }),
                     {
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
                     }
                 );
             }
             
-            // Root path
+            // Root path - API status
             if (path === '/' || path === '') {
-                console.log('[DEBUG] Root endpoint hit');
                 return new Response(
                     JSON.stringify({
-                        "no-budget": "1.0.0",
-                        "status": "ok",
-                        "timestamp": new Date().toISOString()
+                        success: true,
+                        data: {
+                            message: "No Budget API",
+                            version: "1.0.0",
+                            status: "active",
+                            endpoints: {
+                                health: "/health",
+                                bills: "/api/bills",
+                                statistics: "/api/stats",
+                                tags: "/api/tags"
+                            }
+                        },
+                        timestamp: new Date().toISOString()
                     }),
                     {
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
                     }
                 );
+            }
+            
+            // CORS preflight handling
+            if (method === 'OPTIONS') {
+                return new Response(null, {
+                    status: 200,
+                    headers: {
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                        'Access-Control-Max-Age': '86400'
+                    }
+                });
             }
             
             // Bills API - Main feature
@@ -62,40 +95,53 @@ export default {
             }
             
             // Default 404 response
-            console.log('[DEBUG] Default 404 response');
             return new Response(
                 JSON.stringify({
-                    error: 'Not found',
-                    path: path,
-                    url: request.url,
+                    error: 'Not Found',
+                    message: `Endpoint ${path} not found`,
                     available_endpoints: [
-                        '/health',
-                        '/api/bills',
-                        '/api/bills/{uuid}',
-                        '/api/stats',
-                        '/api/tags'
+                        'GET /',
+                        'GET /health',
+                        'GET /api/bills',
+                        'POST /api/bills',
+                        'GET /api/bills/{uuid}',
+                        'PUT /api/bills/{uuid}',
+                        'DELETE /api/bills/{uuid}',
+                        'GET /api/stats',
+                        'GET /api/stats/overview',
+                        'GET /api/stats/monthly',
+                        'GET /api/stats/category',
+                        'GET /api/stats/trend',
+                        'GET /api/tags',
+                        'POST /api/tags'
                     ],
                     timestamp: new Date().toISOString()
                 }),
                 {
                     status: 404,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
                 }
             );
             
         } catch (error) {
-            console.error(`[ERROR] Exception in fetch handler: ${error.message}`);
-            console.error(`[ERROR] Stack trace: ${error.stack}`);
+            console.error(`[ERROR] Unhandled exception: ${error.message}`);
+            console.error(`[ERROR] Stack: ${error.stack}`);
             
             return new Response(
                 JSON.stringify({
-                    error: 'Internal server error',
-                    message: error.message,
+                    error: 'Internal Server Error',
+                    message: 'An unexpected error occurred',
                     timestamp: new Date().toISOString()
                 }),
                 {
                     status: 500,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
                 }
             );
         }

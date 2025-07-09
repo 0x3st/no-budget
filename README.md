@@ -1,8 +1,22 @@
 # No Budget API
 
-Complete accounting API system built on Cloudflare Workers with full CRUD operations and statistical analysis.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/your-username/no-budget/releases)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com/)
+[![Deploy](https://github.com/0x3st/no-budget/workflows/Deploy%20to%20Cloudflare%20Workers/badge.svg)](https://github.com/0x3st/no-budget/actions)
 
-## Features
+Complete personal finance API system built on Cloudflare Workers with full CRUD operations and comprehensive statistical analysis.
+
+## 📚 Documentation
+
+**[📖 Complete Documentation](https://0x3st.github.io/no-budget/)**
+
+- [📘 Getting Started Guide](https://0x3st.github.io/no-budget/guide/)
+- [📋 API Reference](https://0x3st.github.io/no-budget/api/)
+- [💡 Examples & Use Cases](https://0x3st.github.io/no-budget/examples/)
+- [🚀 Deployment Guide](https://0x3st.github.io/no-budget/deployment/)
+
+## 🚀 Features
 
 - 🧾 **Bills Management** - Complete CRUD operations for accounting records
 - 📊 **Statistics** - Comprehensive financial analysis and reporting
@@ -10,8 +24,12 @@ Complete accounting API system built on Cloudflare Workers with full CRUD operat
 - 🔍 **Advanced Filtering** - Search and filter by multiple criteria
 - 📈 **Trend Analysis** - Time-based financial trends
 - 💾 **KV Storage** - Reliable serverless data persistence
+- 🌍 **Global Edge Network** - Lightning-fast responses worldwide
+- 🔒 **Secure** - Built on Cloudflare's secure infrastructure
+- 📱 **REST API** - Standard HTTP methods with JSON responses
+- 🎯 **Zero Dependencies** - Pure JavaScript implementation
 
-## Bill Structure
+## 📋 Bill Structure
 
 Each bill contains:
 - `uuid` - Unique identifier
