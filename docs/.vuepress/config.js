@@ -1,6 +1,7 @@
 import { defineUserConfig } from 'vuepress'
 import { defaultTheme } from '@vuepress/theme-default'
 import { searchPlugin } from '@vuepress/plugin-search'
+import { viteBundler } from '@vuepress/bundler-vite'
 
 export default defineUserConfig({
   lang: 'en-US',
@@ -8,6 +9,8 @@ export default defineUserConfig({
   description: 'Complete personal finance API built on Cloudflare Workers',
   
   base: '/no-budget/',
+  
+  bundler: viteBundler(),
   
   head: [
     ['link', { rel: 'icon', href: '/no-budget/favicon.ico' }],
