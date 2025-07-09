@@ -1,3 +1,0 @@
-import comp from "/Users/laywoo/no-budget/docs/.vuepress/.temp/pages/README.docs.html.vue"
-const data = JSON.parse("{\"path\":\"/README.docs.html\",\"title\":\"Documentation\",\"lang\":\"en-US\",\"frontmatter\":{},\"git\":{\"updatedTime\":1752037345000,\"contributors\":[{\"name\":\"0x3st\",\"username\":\"0x3st\",\"email\":\"findmethroughemail@gmail.com\",\"commits\":1,\"url\":\"https://github.com/0x3st\"}],\"changelog\":[{\"hash\":\"30ad187db0c62f38d050bfa7fe208a20b30ebba9\",\"time\":1752037345000,\"email\":\"findmethroughemail@gmail.com\",\"author\":\"0x3st\",\"message\":\"v1.0.0 formal update\"}]},\"filePathRelative\":\"README.docs.md\"}")
-export { comp, data }
