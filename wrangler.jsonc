@@ -16,8 +16,8 @@
 	 */
 	"kv_namespaces": [
 		{
-			"binding": "KV",
-			"id": "183bb39d755846e1adff5ecc56413b8b"
+			"binding": "NO_BUDGET_KV",
+			"id": "183bb39d755846e1adff5ecc56413b8b",
 		}
 	],
 	/**
@@ -37,10 +37,14 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
+	"vars": { 
+		"API_TOKEN": "dev_token_change_in_production" 
+	},
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 * For production, set API_TOKEN as a secret instead of var:
+	 * wrangler secret put API_TOKEN
 	 */
 
 	/**
@@ -53,5 +57,10 @@
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
-	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+	// "services": [
+	// 	{
+	// 		"binding": "MY_SERVICE",
+	// 		"service": "my-service"
+	// 	}
+	// ]
 }
