@@ -2,6 +2,10 @@
 
 A lightweight personal finance API built on Cloudflare Workers with comprehensive accounting features. Track your income and expenses with a modern web interface and RESTful API.
 
+[![Demo](https://img.shields.io/badge/Demo-demo.gnu.do-green.svg)](https://demo.gnu.do)
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub](https://img.shields.io/badge/GitHub-0x3st%2Fno--budget-blue.svg)](https://github.com/0x3st/no-budget)
+
 ## 🌟 Features
 
 - **Transaction Management**: Add, view, and categorize your financial transactions
